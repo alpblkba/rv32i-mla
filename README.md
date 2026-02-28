@@ -1,0 +1,2 @@
+# rv32i-mla
+RV32I machine learning accelerator, is a minimal 3-stage in-order RV32I processor extended in a tightly coupled int8 matrix multiplication accelerator and a 2-bit dynamic branch predictor. The design targets TinyML interference workloads, demonstrating hardware-software co-design through low-precision MAC acceleration and lightweight control-flow optimization. The project provides a compact FPGA implementation with runtime interaction and performance evaluation support. 
