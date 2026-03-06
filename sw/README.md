@@ -7,7 +7,7 @@ The goal of this layer is to provide a clean **hardware–software boundary** be
 The software stack is structured as follows:
 
 
-'''
+
 Python / Jupyter Notebook
             │
             ▼
@@ -18,7 +18,7 @@ MMIO / mailbox interface
             │
             ▼
 PL hardware (CPU + accelerator + BRAM)
-'''
+
 
 The C layer is responsible for:
 
