@@ -6,18 +6,10 @@ The goal of this layer is to provide a clean **hardware–software boundary** be
 
 The software stack is structured as follows:
 
-
-
-Python / Jupyter Notebook
-            │
-            ▼
-C userspace control library
-            │
-            ▼
-MMIO / mailbox interface
-            │
-            ▼
-PL hardware (CPU + accelerator + BRAM)
+1. Python / Jupyter Notebook 
+2. C userspace control library
+3. MMIO / mailbox interface
+4. PL hardware (CPU + accelerator + BRAM)
 
 
 The C layer is responsible for:
@@ -32,9 +24,8 @@ Python notebooks remain the **orchestration and demonstration layer**, while the
 
 ## Directory Structure
 
-'''
+
 sw/
 ├── include/    public API headers
 ├── src/        C implementation (library + demo programs)
 └── README.md
-'''
