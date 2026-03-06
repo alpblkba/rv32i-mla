@@ -30,7 +30,7 @@ This separation improves maintainability and makes the project resemble a real e
 
 The software stack for the project is organized in three layers:
 
-'''
+
 Python / Jupyter
         │
         │  (high-level orchestration, demos, visualization)
@@ -43,7 +43,7 @@ Programmable logic (PL)
         ├─ RV32I CPU
         ├─ Matrix Accelerator
         └─ BRAM / AXI interface
-'''
+
 
 Python loads the FPGA overlay and provides input data. The C layer manages all low-level hardware communication.
 
