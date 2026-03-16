@@ -1,7 +1,7 @@
 {
   "design": {
     "design_info": {
-      "boundary_crc": "0x1C4B004138DC3F28",
+      "boundary_crc": "0x1C4B00413E50FDD7",
       "device": "xc7z020clg400-1",
       "gen_directory": "../../../../RV32I-MLA.gen/sources_1/bd/rv32i_mla_bd",
       "name": "rv32i_mla_bd",
@@ -667,6 +667,20 @@
         "xci_name": "rv32i_mla_bd_axi_bram_0",
         "xci_path": "ip/rv32i_mla_bd_axi_bram_0/rv32i_mla_bd_axi_bram_0.xci",
         "inst_hier_path": "axi_bram",
+        "parameters": {
+          "DATA_WIDTH": {
+            "value": "32"
+          },
+          "PROTOCOL": {
+            "value": "AXI4"
+          },
+          "READ_LATENCY": {
+            "value": "1"
+          },
+          "SINGLE_PORT_BRAM": {
+            "value": "1"
+          }
+        },
         "hdl_attributes": {
           "BMM_INFO_ADDRESS_SPACE": {
             "value": "byte  0x40000000 32 > rv32i_mla_bd bram0",
@@ -790,13 +804,7 @@
           "dmem_addr": {
             "direction": "O",
             "left": "10",
-            "right": "0",
-            "parameters": {
-              "PortWidth": {
-                "value": "32",
-                "value_src": "ip_prop"
-              }
-            }
+            "right": "0"
           },
           "dmem_wdata": {
             "direction": "O",
