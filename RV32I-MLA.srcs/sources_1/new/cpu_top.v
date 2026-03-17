@@ -10,21 +10,23 @@ module cpu_top (
     input  wire [31:0] dmem_rdata
 );
 
-    // ------------------------------------------------------------
-    // Frozen project CPU organization: compact 3-stage controller
-    //   1) IF         : fetch instruction
-    //   2) ID         : decode + register read + immediate generation
-    //   3) EX/MEM/WB  : execute, access memory if needed, write back
-    // ------------------------------------------------------------
+    // frozen compact 3-stage CPU:
+    //   IF -> ID -> EX/MEM/WB
+    //
+    // instruction/data share one synchronous BRAM port,
+    // the controller uses internal wait states for fetch/load/store.
 
-    localparam [2:0]
-        S_RESET      = 3'd0,
-        S_IF_ADDR    = 3'd1,
-        S_IF_WAIT    = 3'd2,
-        S_ID         = 3'd3,
-        S_EXWB       = 3'd4,
-        S_LOAD_WAIT  = 3'd5,
-        S_STORE_COMMIT = 3'd6;
+    localparam [3:0]
+        S_RESET        = 4'd0,
+        S_IF_ADDR      = 4'd1,
+        S_IF_WAIT1     = 4'd2,
+        S_IF_WAIT2     = 4'd3,
+        S_IF_LATCH     = 4'd4,
+        S_ID           = 4'd5,
+        S_EXWB         = 4'd6,
+        S_LOAD_WAIT    = 4'd7,
+        S_LOAD_CAPTURE = 4'd8,
+        S_STORE_COMMIT = 4'd9;
 
     localparam [6:0] OPC_RTYPE  = 7'b0110011;
     localparam [6:0] OPC_ITYPE  = 7'b0010011;
@@ -33,11 +35,13 @@ module cpu_top (
     localparam [6:0] OPC_BRANCH = 7'b1100011;
     localparam [6:0] OPC_JAL    = 7'b1101111;
 
-    reg [2:0]  state;
+    reg [3:0]  state;
     reg [31:0] pc;
     reg [31:0] cycle_counter;
 
     reg [31:0] regs [0:31];
+
+    reg [31:0] fetch_pc_q;   // PC used when fetch address was issued
 
     reg [31:0] if_pc;
     reg [31:0] if_instr;
@@ -59,7 +63,7 @@ module cpu_top (
 
     reg [10:0] store_addr_q;
     reg [31:0] store_data_q;
-    reg [31:0] store_pc_next;
+    reg [31:0] store_pc_next_q;
 
     integer i;
 
@@ -82,43 +86,46 @@ module cpu_top (
 
     always @(posedge clk) begin
         if (!rst_n) begin
-            state         <= S_RESET;
-            pc            <= 32'd0;
-            cycle_counter <= 32'd0;
+            state           <= S_RESET;
+            pc              <= 32'd0;
+            cycle_counter   <= 32'd0;
 
-            dmem_en       <= 1'b1;
-            dmem_we       <= 1'b0;
-            dmem_addr     <= 11'd0;
-            dmem_wdata    <= 32'd0;
+            dmem_en         <= 1'b1;
+            dmem_we         <= 1'b0;
+            dmem_addr       <= 11'd0;
+            dmem_wdata      <= 32'd0;
 
-            if_pc         <= 32'd0;
-            if_instr      <= 32'd0;
+            fetch_pc_q      <= 32'd0;
+            if_pc           <= 32'd0;
+            if_instr        <= 32'd0;
 
-            ex_pc         <= 32'd0;
-            ex_instr      <= 32'd0;
-            ex_rs1_val    <= 32'd0;
-            ex_rs2_val    <= 32'd0;
-            ex_imm        <= 32'd0;
-            ex_rd         <= 5'd0;
-            ex_rs1        <= 5'd0;
-            ex_rs2        <= 5'd0;
-            ex_funct3     <= 3'd0;
-            ex_funct7     <= 7'd0;
-            ex_opcode     <= 7'd0;
+            ex_pc           <= 32'd0;
+            ex_instr        <= 32'd0;
+            ex_rs1_val      <= 32'd0;
+            ex_rs2_val      <= 32'd0;
+            ex_imm          <= 32'd0;
+            ex_rd           <= 5'd0;
+            ex_rs1          <= 5'd0;
+            ex_rs2          <= 5'd0;
+            ex_funct3       <= 3'd0;
+            ex_funct7       <= 7'd0;
+            ex_opcode       <= 7'd0;
 
-            load_rd       <= 5'd0;
-            load_pc_next  <= 32'd0;
-            store_addr_q  <= 11'd0;
-            store_data_q  <= 32'd0;
-            store_pc_next <= 32'd0;
+            load_rd         <= 5'd0;
+            load_pc_next    <= 32'd0;
 
-            led           <= 4'b0001;
+            store_addr_q    <= 11'd0;
+            store_data_q    <= 32'd0;
+            store_pc_next_q <= 32'd0;
+
+            led             <= 4'b0001;
 
             for (i = 0; i < 32; i = i + 1)
                 regs[i] <= 32'd0;
         end else begin
             cycle_counter <= cycle_counter + 32'd1;
 
+            // defaults every cycle
             dmem_en    <= 1'b1;
             dmem_we    <= 1'b0;
             dmem_wdata <= 32'd0;
@@ -130,20 +137,35 @@ module cpu_top (
 
             case (state)
                 S_RESET: begin
-                    led       <= 4'b0001;
-                    dmem_addr <= pc[10:0];
-                    state     <= S_IF_WAIT;
+                    led        <= 4'b0001;
+                    fetch_pc_q <= pc;
+                    dmem_addr  <= pc[10:0];
+                    state      <= S_IF_WAIT1;
                 end
 
                 S_IF_ADDR: begin
-                    led       <= 4'b0001;
-                    dmem_addr <= pc[10:0];
-                    state     <= S_IF_WAIT;
+                    led        <= 4'b0001;
+                    fetch_pc_q <= pc;
+                    dmem_addr  <= pc[10:0];
+                    state      <= S_IF_WAIT1;
                 end
 
-                S_IF_WAIT: begin
+                // one wait is not enough after a data access on this shared,
+                // synchronous BRAM-style interface. two waits let dmem_rdata
+                // settle to the instruction word for the requested address.
+                S_IF_WAIT1: begin
+                    led   <= 4'b0001;
+                    state <= S_IF_WAIT2;
+                end
+
+                S_IF_WAIT2: begin
+                    led   <= 4'b0001;
+                    state <= S_IF_LATCH;
+                end
+
+                S_IF_LATCH: begin
                     led      <= 4'b0001;
-                    if_pc    <= pc;
+                    if_pc    <= fetch_pc_q;
                     if_instr <= dmem_rdata;
                     state    <= S_ID;
                 end
@@ -226,10 +248,10 @@ module cpu_top (
 
                         OPC_STORE: begin
                             if (ex_funct3 == 3'b010) begin
-                                store_addr_q <= ex_rs1_val[10:0] + ex_imm[10:0];
-                                store_data_q  <= ex_rs2_val;
-                                store_pc_next <= pc_next_default;
-                                state         <= S_STORE_COMMIT;
+                                store_addr_q    <= ex_rs1_val[10:0] + ex_imm[10:0];
+                                store_data_q    <= ex_rs2_val;
+                                store_pc_next_q <= pc_next_default;
+                                state           <= S_STORE_COMMIT;
                             end else begin
                                 pc    <= pc_next_default;
                                 state <= S_IF_ADDR;
@@ -269,6 +291,11 @@ module cpu_top (
                 end
 
                 S_LOAD_WAIT: begin
+                    led   <= 4'b1000;
+                    state <= S_LOAD_CAPTURE;
+                end
+
+                S_LOAD_CAPTURE: begin
                     led <= 4'b1000;
 
                     if (load_rd != 5'd0)
@@ -279,12 +306,12 @@ module cpu_top (
                 end
 
                 S_STORE_COMMIT: begin
-                    led       <= 4'b1000;
-                    dmem_addr <= store_addr_q;
-                    dmem_wdata<= store_data_q;
-                    dmem_we   <= 1'b1;
-                    pc        <= store_pc_next;
-                    state     <= S_IF_ADDR;
+                    led        <= 4'b1001;
+                    dmem_addr  <= store_addr_q;
+                    dmem_wdata <= store_data_q;
+                    dmem_we    <= 1'b1;
+                    pc         <= store_pc_next_q;
+                    state      <= S_IF_ADDR;
                 end
 
                 default: begin

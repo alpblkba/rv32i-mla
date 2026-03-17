@@ -61,7 +61,7 @@ module tb_accelerator;
         #30;
         rst_n = 1'b1;
 
-        // Load A = identity matrix
+        // load A = identity matrix
         // row0 = [1,0,0,0]
         send_cmd(2'd0, 32'h00000001, 32'd0);
         // row1 = [0,1,0,0]
@@ -71,20 +71,20 @@ module tb_accelerator;
         // row3 = [0,0,0,1]
         send_cmd(2'd0, 32'h01000000, 32'd3);
 
-        // Load B rows
+        // load B rows
         send_cmd(2'd1, 32'h04030201, 32'd0); // [1,2,3,4]
         send_cmd(2'd1, 32'h08070605, 32'd1); // [5,6,7,8]
         send_cmd(2'd1, 32'h0C0B0A09, 32'd2); // [9,10,11,12]
         send_cmd(2'd1, 32'h100F0E0D, 32'd3); // [13,14,15,16]
 
-        // Start compute
+        // start compute
         send_cmd(2'd2, 32'd0, 32'd0);
 
-        // Wait until done
+        // wait until done
         wait (busy == 1'b1);
         wait (busy == 1'b0);
 
-        // Read all C elements
+        // read all C elements
         for (idx = 0; idx < 16; idx = idx + 1) begin
             send_cmd(2'd3, idx, 32'd0);
             @(posedge clk);
