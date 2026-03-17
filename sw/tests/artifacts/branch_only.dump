@@ -1,0 +1,21 @@
+
+/Users/alpblkba/Documents/GitHub/rv32i-mla/sw/build/branch_only.elf:     file format elf32-littleriscv
+
+
+Disassembly of section .text:
+
+00000000 <_start>:
+   0:	00500093          	li	ra,5
+   4:	00700113          	li	sp,7
+   8:	002081b3          	add	gp,ra,sp
+   c:	10302023          	sw	gp,256(zero) # 100 <loop+0xdc>
+  10:	10002203          	lw	tp,256(zero) # 100 <loop+0xdc>
+  14:	00418463          	beq	gp,tp,1c <pass>
+  18:	00100293          	li	t0,1
+
+0000001c <pass>:
+  1c:	00200293          	li	t0,2
+  20:	10502223          	sw	t0,260(zero) # 104 <loop+0xe0>
+
+00000024 <loop>:
+  24:	0000006f          	j	24 <loop>

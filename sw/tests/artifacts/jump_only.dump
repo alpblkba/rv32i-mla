@@ -1,0 +1,20 @@
+
+/Users/alpblkba/Documents/GitHub/rv32i-mla/sw/build/jump_only.elf:     file format elf32-littleriscv
+
+
+Disassembly of section .text:
+
+00000000 <_start>:
+   0:	00500093          	li	ra,5
+   4:	00700113          	li	sp,7
+   8:	002081b3          	add	gp,ra,sp
+   c:	10302023          	sw	gp,256(zero) # 100 <loop+0xe0>
+  10:	0080006f          	j	18 <pass>
+  14:	00100293          	li	t0,1
+
+00000018 <pass>:
+  18:	00200293          	li	t0,2
+  1c:	10502223          	sw	t0,260(zero) # 104 <loop+0xe4>
+
+00000020 <loop>:
+  20:	0000006f          	j	20 <loop>

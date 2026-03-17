@@ -1,0 +1,12 @@
+
+/Users/alpblkba/Documents/GitHub/rv32i-mla/sw/build/smoke.elf:     file format elf32-littleriscv
+
+
+Disassembly of section .text:
+
+00000000 <_start>:
+   0:	00c00093          	li	ra,12
+   4:	10102023          	sw	ra,256(zero) # 100 <loop+0xf8>
+
+00000008 <loop>:
+   8:	0000006f          	j	8 <loop>
