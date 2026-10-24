@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Host-side script.
-# Pushes the local sw/ directory to the PYNQ board and builds the native C app there.
+# Pushes the local sw/ directory to the PYNQ board and builds the native C application there.
 
 BOARD_USER="${BOARD_USER:-xilinx}"
 BOARD_HOST="${BOARD_HOST:-localhost}"
@@ -24,9 +23,7 @@ echo
 # Ensure remote base exists
 ssh -p "${BOARD_PORT}" "${BOARD_USER}@${BOARD_HOST}" "mkdir -p '${REMOTE_BASE}'"
 
-# Push sw/ to board
-# Excludes native build outputs so board rebuild is always clean.
-# Keeps tests/artifacts unless you rename or exclude them separately.
+# Syncs sw/ without native build outputs to force a board rebuild; test artifacts remain included.
 rsync -avz --delete \
   -e "ssh -p ${BOARD_PORT}" \
   --exclude 'build/' \

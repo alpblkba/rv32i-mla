@@ -8,6 +8,7 @@ _start:
     sw   x3, 0x100(x0)
     addi x5, x0, 2
     sw   x5, 0x104(x0)
+    ecall
 
 loop:
-    jal x0, loop 
+    jal x0, loop

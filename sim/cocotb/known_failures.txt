@@ -1,0 +1,26 @@
+# Tests that run on the current cpu_top and fail because it does not implement the instruction. Each was run and its mismatch read in the log; none is blocked. The ISA work removes a line in the commit that makes the test pass.
+isa_andi
+isa_auipc
+isa_bge
+isa_bgeu
+isa_blt
+isa_bltu
+isa_jalr
+isa_lb
+isa_lbu
+isa_lh
+isa_lhu
+isa_lui
+isa_ori
+isa_sll
+isa_slli
+isa_slt
+isa_slti
+isa_sltiu
+isa_sltu
+isa_sra
+isa_srai
+isa_srl
+isa_srli
+isa_xor
+isa_xori
