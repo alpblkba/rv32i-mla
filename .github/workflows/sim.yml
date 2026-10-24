@@ -1,0 +1,33 @@
+# Runs the boardless testbed in sim/cocotb with Icarus Verilog. The tool versions are the ones the testbed was verified with on Ubuntu 24.04.
+name: sim
+
+on: [push, pull_request]
+
+jobs:
+  cocotb:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install Icarus Verilog and the RISC-V toolchain
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends iverilog=12.0-2build2 gcc-riscv64-unknown-elf=13.2.0-11ubuntu1+12 binutils-riscv64-unknown-elf=2.42-1ubuntu1+6
+      - name: Install cocotb
+        run: pip install -r sim/cocotb/requirements.txt
+      # The gate: memory model, checker and program checks, the nine baseline CPU tests and the harness tests on the stub.
+      - name: Baseline
+        run: make -C sim/cocotb
+      # The full RV32I suite exits nonzero until the CPU has halted, trap, a 32-bit dmem_addr and a 4-bit dmem_we, because its blocked tests verify nothing. This step reports that without failing the job; a green job means the baseline holds, not that RV32I passes.
+      - name: Full RV32I suite
+        continue-on-error: true
+        run: make -C sim/cocotb isa
+      - name: Coverage with status
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage
+          path: sim/cocotb/build/coverage_icarus.csv
+          if-no-files-found: ignore

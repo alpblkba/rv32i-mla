@@ -1,0 +1,111 @@
+item,kind,test,needs,edge_cases
+LUI,instruction,isa_lui,,U-type; imm 0x00000 0x00001 0x12345 0x80000 0xfffff; bits 11:0 cleared; rd x0
+AUIPC,instruction,isa_auipc,,U-type; imm 0 1 0x80000 0xfffff from the instruction's own address; 32-bit wrap; rd x0
+JAL,instruction,isa_jal,,J-type; link equals pc+4; forward and backward offsets; backward offset sets imm[20] imm[19:12] imm[11]; jump over 256 zero bytes; rd x0; gap: no forward offset with imm[11] or imm[19:12] set
+JALR,instruction,isa_jalr,,I-type; target rs1+imm; negative imm; imm 0x7f0 with a negative rs1; target bit 0 cleared without trap; rd equal to rs1 uses the old rs1; rd x0; link equals pc+4
+BEQ,instruction,isa_beq,,B-type; equal; unequal; operands differing only in bit 31 or only in bit 0; backward taken and not taken; not taken with a misaligned target
+BNE,instruction,isa_bne,,B-type; unequal; equal; operands differing only in bit 31 or only in bit 0; backward; not taken with a misaligned target
+BLT,instruction,isa_blt,,B-type; signed: -1 below 1; 0x80000000 below 0x7fffffff; -2 below -1; equal not taken; backward; not taken with a misaligned target
+BGE,instruction,isa_bge,,B-type; signed complement of BLT; equal taken; backward; not taken with a misaligned target
+BLTU,instruction,isa_bltu,,B-type; unsigned: 0xffffffff largest; opposite of BLT on every sign difference; backward; not taken with a misaligned target
+BGEU,instruction,isa_bgeu,,B-type; unsigned complement of BLTU; equal taken; backward; not taken with a misaligned target
+LB,instruction,isa_lb,,I-type; bytes 0 to 3 of 0x80ff7f01; sign extension from bit 7; base register with negative offset and rd equal to base
+LH,instruction,isa_lh,,I-type; halfwords at offsets 0 and 2 of two words; sign extension from bit 15; base register with negative offset
+LW,instruction,isa_lw,,I-type; words with bit 31 set and clear; base register with negative offset
+LBU,instruction,isa_lbu,,I-type; bytes 0 to 3 of 0x80ff7f01; zero extension; base register with negative offset
+LHU,instruction,isa_lhu,,I-type; halfwords at offsets 0 and 2; zero extension; base register with negative offset
+SB,instruction,isa_sb,we4,S-type; each byte lane 0 to 3; the other three bytes kept; rs2 upper bits ignored; base register with negative offset
+SH,instruction,isa_sh,we4,S-type; both halfword lanes; the other halfword kept; rs2 upper bits ignored; base register with negative offset
+SW,instruction,isa_sw,,S-type; full word replaced; base register with negative offset; storing x0 writes zero
+ADDI,instruction,isa_addi,,I-type; imm -2048 -1 1 2047 sign extended; signed overflow; 32-bit wrap; rd equal to rs1; rd x0
+SLTI,instruction,isa_slti,,I-type; signed compare with sign-extended imm; imm -2048 and 2047; equal gives 0; rd equal to rs1; rd x0
+SLTIU,instruction,isa_sltiu,,I-type; imm sign extended then unsigned compare; imm -1 is 0xffffffff; sltiu rd rs1 1 tests rs1 == 0; rd x0
+XORI,instruction,isa_xori,,I-type; imm -1 inverts; imm -2048 flips bits 31:11; rd equal to rs1; rd x0
+ORI,instruction,isa_ori,,I-type; imm -2048 sets bits 31:11; result differs from ADDI; rd x0
+ANDI,instruction,isa_andi,,I-type; imm -16 and -2048 keep upper bits; imm 2047 keeps bits 10:0; rd x0
+SLLI,instruction,isa_slli,,I-type; shamt 0 1 4 31; bits shifted out of bit 31 lost; rd x0; imm[5] set is trap_illegal_slli_shamt5
+SRLI,instruction,isa_srli,,I-type; shamt 0 1 4 31; zero fill; differs from SRAI on negative values; rd x0
+SRAI,instruction,isa_srai,,I-type; shamt 0 1 4 31; sign fill; differs from SRLI on negative values; rd x0; wrong funct7 is trap_illegal_srai_funct7
+ADD,instruction,isa_add,,R-type; carry out of bit 31; wrap; rd equal to rs1; rd x0
+SUB,instruction,isa_sub,,R-type; borrow; wrap; differs from ADD; rd equal to rs1; rd x0
+SLL,instruction,isa_sll,,R-type; shamt 0 1 4 31 from rs2[4:0]; rs2 32 and 0xffffffe4 use only bits 4:0; rd x0
+SLT,instruction,isa_slt,,R-type; signed compare across the sign boundary; equal gives 0; rd equal to rs1; rd x0
+SLTU,instruction,isa_sltu,,R-type; unsigned compare; opposite of SLT on sign differences; rd x0
+XOR,instruction,isa_xor,,R-type; results differ from both operands and from OR; equal operands give 0; rd x0
+SRL,instruction,isa_srl,,R-type; shamt 0 1 4 31 from rs2[4:0]; zero fill; rs2 32 shifts by 0; rd x0
+SRA,instruction,isa_sra,,R-type; shamt 0 1 4 31 from rs2[4:0]; sign fill; differs from SRL; rd x0
+OR,instruction,isa_or,,R-type; results differ from both operands and from ADD; rd equal to rs1; rd x0
+AND,instruction,isa_and,,R-type; results differ from both operands; rd equal to rs1; rd x0
+FENCE,system,isa_fence,,I-type; fence; fence rw rw; fence iorw iorw; fence.tso; rd x5 rs1 x6 and all fm pred succ bits set run as a NOP
+ECALL,system,isa_ecall,halt,I-type; halted high and trap low; the next instruction does not run
+EBREAK,system,isa_ebreak,halt,I-type; halted high and trap low; the next instruction does not run
+illegal all-zero word,trap,trap_illegal_zero,halt,halted and trap high; tohost 0x1ffc still 0; the store after the fault does not run
+illegal all-ones word,trap,trap_illegal_ones,halt,halted and trap high; tohost 0x1ffc still 0; the store after the fault does not run
+illegal 16-bit encoding,trap,trap_illegal_rvc,halt,halted and trap high; tohost 0x1ffc still 0; the store after the fault does not run
+illegal CSR instruction,trap,trap_illegal_csr,halt,halted and trap high; tohost 0x1ffc still 0; the store after the fault does not run
+illegal FENCE.I,trap,trap_illegal_fence_i,halt,halted and trap high; tohost 0x1ffc still 0; the store after the fault does not run
+illegal custom-0,trap,trap_illegal_custom0,halt,halted and trap high; tohost 0x1ffc still 0; the store after the fault does not run
+illegal MUL,trap,trap_illegal_mul,halt,halted and trap high; tohost 0x1ffc still 0; the store after the fault does not run
+illegal AND with funct7 0100000,trap,trap_illegal_and_funct7,halt,halted and trap high; tohost 0x1ffc still 0; the store after the fault does not run
+illegal SLL with funct7 0100000,trap,trap_illegal_sll_funct7,halt,halted and trap high; tohost 0x1ffc still 0; the store after the fault does not run
+reserved SLLI with imm[5] set,trap,trap_illegal_slli_shamt5,halt,halted and trap high; tohost 0x1ffc still 0; the store after the fault does not run
+illegal shift immediate funct7 0110000,trap,trap_illegal_srai_funct7,halt,halted and trap high; tohost 0x1ffc still 0; the store after the fault does not run
+illegal ECALL with rd not x0,trap,trap_illegal_ecall_rd,halt,halted and trap high; tohost 0x1ffc still 0; the store after the fault does not run
+illegal EBREAK with rs1 not x0,trap,trap_illegal_ebreak_rs1,halt,halted and trap high; tohost 0x1ffc still 0; the store after the fault does not run
+illegal MRET,trap,trap_illegal_mret,halt,halted and trap high; tohost 0x1ffc still 0; the store after the fault does not run
+reserved BRANCH funct3 010,trap,trap_illegal_branch_funct3,halt,halted and trap high; tohost 0x1ffc still 0; the store after the fault does not run
+illegal LOAD funct3 011,trap,trap_illegal_load_funct3,halt,halted and trap high; tohost 0x1ffc still 0; the store after the fault does not run
+illegal STORE funct3 011,trap,trap_illegal_store_funct3,halt,halted and trap high; tohost 0x1ffc still 0; the store after the fault does not run
+reserved JALR funct3 001,trap,trap_illegal_jalr_funct3,halt,halted and trap high; tohost 0x1ffc still 0; the store after the fault does not run
+reserved MISC-MEM funct3 010,trap,trap_illegal_misc_mem_funct3,halt,halted and trap high; tohost 0x1ffc still 0; the store after the fault does not run
+illegal OP-IMM-32,trap,trap_illegal_addiw,halt,halted and trap high; tohost 0x1ffc still 0; the store after the fault does not run
+illegal LR.W,trap,trap_illegal_amo,halt,halted and trap high; tohost 0x1ffc still 0; the store after the fault does not run
+misaligned JAL target,trap,trap_misaligned_jal,halt,halted and trap high; tohost 0x1ffc still 0; the store after the fault does not run
+misaligned taken BEQ target,trap,trap_misaligned_branch,halt,halted and trap high; tohost 0x1ffc still 0; the store after the fault does not run
+misaligned JALR target with bit 1 set,trap,trap_misaligned_jalr,halt,halted and trap high; tohost 0x1ffc still 0; the store after the fault does not run
+misaligned LH,trap,trap_misaligned_lh,halt,halted and trap high; tohost 0x1ffc still 0; the store after the fault does not run
+misaligned LHU,trap,trap_misaligned_lhu,halt,halted and trap high; tohost 0x1ffc still 0; the store after the fault does not run
+misaligned LW at 2 mod 4,trap,trap_misaligned_lw,halt,halted and trap high; tohost 0x1ffc still 0; the store after the fault does not run
+misaligned LW at 1 mod 4,trap,trap_misaligned_lw1,halt,halted and trap high; tohost 0x1ffc still 0; the store after the fault does not run
+misaligned SH,trap,trap_misaligned_sh,halt,halted and trap high; tohost 0x1ffc still 0; the store after the fault does not run; memory unchanged
+misaligned SW,trap,trap_misaligned_sw,halt,halted and trap high; tohost 0x1ffc still 0; the store after the fault does not run; memory unchanged
+rv32ui add,upstream,rv32ui_add,,self-checking riscv-tests program; passes when tohost reads 1
+rv32ui addi,upstream,rv32ui_addi,,self-checking riscv-tests program; passes when tohost reads 1
+rv32ui and,upstream,rv32ui_and,,self-checking riscv-tests program; passes when tohost reads 1
+rv32ui andi,upstream,rv32ui_andi,,self-checking riscv-tests program; passes when tohost reads 1
+rv32ui auipc,upstream,rv32ui_auipc,,self-checking riscv-tests program; passes when tohost reads 1
+rv32ui beq,upstream,rv32ui_beq,,self-checking riscv-tests program; passes when tohost reads 1
+rv32ui bge,upstream,rv32ui_bge,,self-checking riscv-tests program; passes when tohost reads 1
+rv32ui bgeu,upstream,rv32ui_bgeu,,self-checking riscv-tests program; passes when tohost reads 1
+rv32ui blt,upstream,rv32ui_blt,,self-checking riscv-tests program; passes when tohost reads 1
+rv32ui bltu,upstream,rv32ui_bltu,,self-checking riscv-tests program; passes when tohost reads 1
+rv32ui bne,upstream,rv32ui_bne,,self-checking riscv-tests program; passes when tohost reads 1
+rv32ui jal,upstream,rv32ui_jal,,self-checking riscv-tests program; passes when tohost reads 1
+rv32ui jalr,upstream,rv32ui_jalr,,self-checking riscv-tests program; passes when tohost reads 1
+rv32ui lb,upstream,rv32ui_lb,,self-checking riscv-tests program; passes when tohost reads 1
+rv32ui lbu,upstream,rv32ui_lbu,,self-checking riscv-tests program; passes when tohost reads 1
+rv32ui ld_st,upstream,rv32ui_ld_st,we4,self-checking riscv-tests program; passes when tohost reads 1
+rv32ui lh,upstream,rv32ui_lh,,self-checking riscv-tests program; passes when tohost reads 1
+rv32ui lhu,upstream,rv32ui_lhu,,self-checking riscv-tests program; passes when tohost reads 1
+rv32ui lui,upstream,rv32ui_lui,,self-checking riscv-tests program; passes when tohost reads 1
+rv32ui lw,upstream,rv32ui_lw,,self-checking riscv-tests program; passes when tohost reads 1
+rv32ui or,upstream,rv32ui_or,,self-checking riscv-tests program; passes when tohost reads 1
+rv32ui ori,upstream,rv32ui_ori,,self-checking riscv-tests program; passes when tohost reads 1
+rv32ui sb,upstream,rv32ui_sb,we4,self-checking riscv-tests program; passes when tohost reads 1
+rv32ui sh,upstream,rv32ui_sh,we4,self-checking riscv-tests program; passes when tohost reads 1
+rv32ui simple,upstream,rv32ui_simple,,self-checking riscv-tests program; passes when tohost reads 1
+rv32ui sll,upstream,rv32ui_sll,,self-checking riscv-tests program; passes when tohost reads 1
+rv32ui slli,upstream,rv32ui_slli,,self-checking riscv-tests program; passes when tohost reads 1
+rv32ui slt,upstream,rv32ui_slt,,self-checking riscv-tests program; passes when tohost reads 1
+rv32ui slti,upstream,rv32ui_slti,,self-checking riscv-tests program; passes when tohost reads 1
+rv32ui sltiu,upstream,rv32ui_sltiu,,self-checking riscv-tests program; passes when tohost reads 1
+rv32ui sltu,upstream,rv32ui_sltu,,self-checking riscv-tests program; passes when tohost reads 1
+rv32ui sra,upstream,rv32ui_sra,,self-checking riscv-tests program; passes when tohost reads 1
+rv32ui srai,upstream,rv32ui_srai,,self-checking riscv-tests program; passes when tohost reads 1
+rv32ui srl,upstream,rv32ui_srl,,self-checking riscv-tests program; passes when tohost reads 1
+rv32ui srli,upstream,rv32ui_srli,,self-checking riscv-tests program; passes when tohost reads 1
+rv32ui st_ld,upstream,rv32ui_st_ld,we4,self-checking riscv-tests program; passes when tohost reads 1
+rv32ui sub,upstream,rv32ui_sub,,self-checking riscv-tests program; passes when tohost reads 1
+rv32ui sw,upstream,rv32ui_sw,,self-checking riscv-tests program; passes when tohost reads 1
+rv32ui xor,upstream,rv32ui_xor,,self-checking riscv-tests program; passes when tohost reads 1
+rv32ui xori,upstream,rv32ui_xori,,self-checking riscv-tests program; passes when tohost reads 1

@@ -307,6 +307,14 @@ The current visible baseline does **not** implement, among others:
 
 Unsupported or unrecognized instructions fall through the default execution path and simply advance the PC without architecturally meaningful execution.
 
+## 5.5 Planned RV32I extension
+
+The current CPU implements ten RV32I instructions. The next RTL revision will extend this to the full set of 37 integer, memory and control-flow instructions, with FENCE, ECALL and EBREAK handled separately.
+
+The `sim/cocotb/` directory contains directed tests for all 40 instructions, illegal encodings, alignment faults and the upstream `rv32ui` test suite. The existing CPU baseline passes its simulation tests, while unsupported instructions remain expected failures or blocked until the required RTL and memory interface changes are implemented.
+
+Run `make -C sim/cocotb` to verify the current CPU baseline. The full ISA suite is available through `make -C sim/cocotb isa`, but it is not expected to pass until the CPU extension is complete.
+
 ## 6. Program counter and control-flow behavior
 
 The normal sequential next-PC rule is:
